@@ -4,7 +4,7 @@ import {testOrder, testReports} from "./test.js";
 
 const orderMap = {}
 
-order.split('\n').forEach(line => {
+testOrder.split('\n').forEach(line => {
     const [first, second] = line.split('|');
     if (!orderMap[first]) orderMap[first] = [];
     orderMap[first].push(second);
@@ -20,7 +20,7 @@ Object.keys(orderMap).forEach(key => {
 
 const incorrectReports = [];
 
-const correctReports = reports.split('\n').filter((line) => {
+const correctReports = testReports.split('\n').filter((line) => {
     const report = line.split(',');
     for (let i = 0; i < report.length - 1; i++) {
         const biggerNumbers = orderMap[report[i]]
