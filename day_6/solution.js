@@ -25,13 +25,11 @@ const visited = {};
 
 const traverse = () => {
     let k = 0;
-    let turns = 0;
 
     while (start.x < m && start.x >= 0 && start.y < n && start.y >= 0) {
         const {x, y} = start;
 
-        visited[`${x},${y}`] = true;
-
+        visited[`${x},${y}`] = {x,y};
 
         const [dx, dy] = dir[k];
         const nextStep = map[x + dx]?.[y + dy];
@@ -48,6 +46,7 @@ const traverse = () => {
 
 traverse();
 const result = Object.keys(visited).length;
+
 console.log(result)
 /*--------------------Part2-----------------------------------------*/
 
@@ -81,17 +80,17 @@ const now = Date.now();
 let result2 = 0;
 const makeObstacle = () => {
 
-    for (let i = 0; i < map.length; i++) {
-        for (let j = 0; j < map[i].length; j++) {
-            const sym = map[i][j]
-            if (sym === '.' && (i !== startX || j !== startY)) {
-                map[i][j] = '#'
-                result2 += checkLoop(startX, startY);
+    Object.keys(visited).forEach((key)=>{
+        const {x:i,y:j} = visited[key];
+        const sym = map[i][j]
+        if (sym === '.' && (i !== startX || j !== startY)) {
+            map[i][j] = '#'
+            result2 += checkLoop(startX, startY);
 
-                map[i][j] = '.'
-            }
+            map[i][j] = '.'
         }
-    }
+    })
+
 }
 makeObstacle();
 const later = Date.now();
