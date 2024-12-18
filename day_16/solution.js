@@ -62,7 +62,6 @@ const dijkstra = () => {
 }
 
 dijkstra();
-// console.log(vertexes)
 const result = vertexes[`${finish.x},${finish.y}`].distance;
 console.log(result);
 /*--------------------Part2-----------------------------------------*/
@@ -79,32 +78,47 @@ const oppositeDir = {
 }
 const findAllPaths = (start, finish, length, vertexes) => {
     const {x, y, dir} = start;
-    console
-     .log({x, y, dir});
 
-    if (visited2[`${x},${y},${dir}`]) return;
-    visited2[`${x},${y},${dir}`] = true;
+    if (visited2[`${x},${y},${dir}`]) {
+        if (unique.has(`${x},${y}`)) {
+            vertexes.forEach((vertex) => {
+                map[vertex.y][vertex.x] = 'O';
+                unique.add(`${x},${y}`);
+            })
+        }
+        return;
+    }
+    else {
+
+        visited2[`${x},${y},${dir}`]=true
+    }
 
     if (start.x === finish.x && start.y === finish.y) {
-        // console.log({length, vertexes})
+        console.log(length)
         vertexes.forEach((vertex) => {
+            // console.log(vertex)
             map[vertex.y][vertex.x] = 'O';
-            unique.add(vertex.x + ',' + vertex.y);
+            unique.add(`${vertex.x},${vertex.y}`);
         })
+        // unique.add(path)
+        // console.log(unique)
         return;
     } else {
         const neighbors = getNeighbors(start);
         // console.log({start,neighbors})
-        if (neighbors.length)
-            neighbors.forEach((neighbor) => {
-                findAllPaths(neighbor, finish, length + 1, [...vertexes, neighbor])
+        if (neighbors.length) {
+
+            neighbors.filter(el => el.dir !== oppositeDir[start.dir]).forEach((neighbor) => {
+                const newLength = neighbor.dir === start.dir ? 1 : 1001;
+                findAllPaths(neighbor, finish, length + newLength, [...vertexes, start])
             })
+        }
         else return;
     }
 }
 
-findAllPaths({...start, dir:'R'}, finish, 0, [start]);
+findAllPaths(vertexes[`${start.x},${start.y}`], finish, 0, [vertexes[`${start.x},${start.y}`]]);
 
 
 console.log(unique.size)
-// console.table(map)
+console.table(map)
