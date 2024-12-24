@@ -58,7 +58,6 @@ const dijkstra = () => {
 
     }
 
-
 }
 
 dijkstra();
@@ -68,6 +67,11 @@ console.log(result);
 
 
 const unique = new Set();
+
+const getKey = (point) => {
+    const {x, y, dir} = point;
+    return dir ? `${x},${y},${dir}` : `${x},${y}`
+}
 const visited2 = {};
 
 const oppositeDir = {
@@ -76,48 +80,54 @@ const oppositeDir = {
     'L': 'R',
     'R': 'L'
 }
-const findAllPaths = (start, finish, length, vertexes) => {
-    const {x, y, dir} = start;
+const findAllPaths = (start, finish) => {
 
-    if (visited2[`${x},${y},${dir}`]) {
-        if (unique.has(`${x},${y}`)) {
-            vertexes.forEach((vertex) => {
-                map[vertex.y][vertex.x] = 'O';
-                unique.add(`${x},${y}`);
-            })
+    const costs = {};
+    const startKey = getKey(start);
+    costs[startKey] = 0;
+    const paths = new Set();
+
+    const traverse = (point, finish, path, cost) => {
+        // console.log({point, path, cost});
+        // console.log({costs})
+        if (point.x === finish.x && point.y === finish.y) {
+            path.push(finish)
+            return path
         }
-        return;
-    }
-    else {
+        const neighbors = getNeighbors(point);
+        // console.log(neighbors)
+        neighbors.forEach(neighbor => {
+            const localCost = cost + (neighbor.dir !== point.dir ? 1001 : 1);
+            const key = getKey(point);
+            if (costs[key]) {
+                if (costs[key] <= localCost) {
+                    costs[key] = localCost;
+                    const newPath = traverse(neighbor, finish, [...path, neighbor]);
+                    newPath.forEach(el => {
+                        paths.add(el)
+                    });
+                }
+                else return []
+            } else {
+                costs[key] = localCost;
+                const newPath = traverse(neighbor, finish, [...path, neighbor], localCost);
+                newPath.forEach(el => {
+                    paths.add(el)
+                });
+            }
 
-        visited2[`${x},${y},${dir}`]=true
-    }
-
-    if (start.x === finish.x && start.y === finish.y) {
-        console.log(length)
-        vertexes.forEach((vertex) => {
-            // console.log(vertex)
-            map[vertex.y][vertex.x] = 'O';
-            unique.add(`${vertex.x},${vertex.y}`);
         })
-        // unique.add(path)
-        // console.log(unique)
-        return;
-    } else {
-        const neighbors = getNeighbors(start);
-        // console.log({start,neighbors})
-        if (neighbors.length) {
 
-            neighbors.filter(el => el.dir !== oppositeDir[start.dir]).forEach((neighbor) => {
-                const newLength = neighbor.dir === start.dir ? 1 : 1001;
-                findAllPaths(neighbor, finish, length + newLength, [...vertexes, start])
-            })
-        }
-        else return;
+        return paths
+
     }
+
+    const result = traverse(start, finish, [], 0);
+    console.log(result)
+
 }
 
-findAllPaths(vertexes[`${start.x},${start.y}`], finish, 0, [vertexes[`${start.x},${start.y}`]]);
+findAllPaths(vertexes[`${start.x},${start.y}`], finish,);
 
 
 console.log(unique.size)
