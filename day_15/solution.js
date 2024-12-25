@@ -1,22 +1,30 @@
 import {test2, testInput} from "./test.js";
 import {input} from "./input.js";
 
-const inputSwitch = testInput;
+const inputSwitch = input;
 
-const [mapRaw, moves] = inputSwitch.split('\n\n');
-const robot = {x: 0, y: 0};
+const init1 = (input) => {
+    const [mapRaw, movesRaw] = input.split('\n\n');
 
-const map = mapRaw.split('\n').map((el, idx) => {
-    const row = el.split('');
-    const robotIdx = row.findIndex(val => val === '@');
-    if (robotIdx !== -1) {
-        robot.x = robotIdx;
-        robot.y = idx;
-    }
-    return row;
-});
+    const moves = movesRaw.split('\n').join('').split('');
 
-const m = map.length, n = map[0].length;
+    const robot = {x: 0, y: 0};
+
+    const map = mapRaw.split('\n').map((el, idx) => {
+        const row = el.split('');
+        const robotIdx = row.findIndex(val => val === '@');
+        if (robotIdx !== -1) {
+            robot.x = robotIdx;
+            robot.y = idx;
+        }
+        return row;
+    });
+
+    const m = map.length, n = map[0].length;
+
+    return {map, robot, moves, m, n}
+
+}
 
 
 // console.table(map)
@@ -28,8 +36,8 @@ const dir = {
     'v': {x: 0, y: 1},
 }
 
-const simulation = (map) => {
-    moves.split('').forEach((move) => {
+const simulation = (map, moves, robot, m, n) => {
+    moves.forEach((move) => {
         const {x: deltaX, y: deltaY} = dir[move];
         const newPoint = {x: robot.x + deltaX, y: robot.y + deltaY};
         const newValue = map[robot.y + deltaY]?.[robot.x + deltaX];
@@ -96,9 +104,11 @@ const simulation = (map) => {
         }
         // console.table(map)
     })
+
+    return map;
 }
 
-const countGPS = () => {
+const countGPS = (map) => {
     let result = 0;
     for (let i = 0; i < m; i++) {
         for (let j = 0; j < n; j++) {
@@ -108,15 +118,19 @@ const countGPS = () => {
     return result
 }
 
-simulation(map.slice());
-const result = countGPS();
+const {map, m, n, moves, robot} = init1(inputSwitch);
 
-// console.table(map)
+const newMap = simulation(map, moves, robot, m, n);
+const result = countGPS(newMap);
+
 console.log(robot)
 console.log({result})
 /*--------------------Part2-----------------------------------------*/
 
-const init = () => {
+export const init2 = (input) => {
+    const [mapRaw, movesRaw] = input.split('\n\n');
+
+    const moves = movesRaw.split('\n').join('').split('');
     const robot = {x: 0, y: 0};
 
     const map = mapRaw.split('\n').map((el, idx) => {
@@ -138,141 +152,136 @@ const init = () => {
     });
 
 
-    return {map, robot};
+    return {map, robot, moves};
 }
 
 
-const verticalMove = (start, direction, map) => {
+export const verticalMove = (start, direction, map) => {
     const {x: deltaX, y: deltaY} = dir[direction];
     const newPoint = {x: start.x + deltaX, y: start.y + deltaY};
     const newValue = map[start.y + deltaY]?.[start.x + deltaX];
-    console.log({newPoint, newValue})
+    // console.log({newPoint, newValue, start})
     if (newValue === ']' || newValue === '[') {
         const left = newValue === '[' ? newPoint.x : newPoint.x - 1;
         const right = newValue === ']' ? newPoint.x : newPoint.x + 1;
 
         const checkRight = verticalMove({x: right, y: newPoint.y}, direction, map);
         const checkLeft = verticalMove({x: left, y: newPoint.y}, direction, map);
-// console.log({checkRight, checkLeft})
+        // console.log({checkRight, checkLeft})
         if (!checkRight || !checkLeft) return false;
 
-        if (newValue === '['){
-
-        }
-        map[newValue.y][newValue.x]=map[start.y][start.x];
+        map[newPoint.y][newPoint.x] = map[start.y][start.x];
         map[start.y][start.x] = '.';
-        // return {
-        //     left: checkLeft.x || checkLeft.left,
-        //     right: checkRight.x || checkRight.right,
-        //     y: direction === '^' ? Math.min(checkLeft.y, checkRight.y) : Math.max(checkLeft.y, checkRight.y)
-        // }
-
+        // console.log({start, newPoint, checkRight, checkLeft})
+        return true;
     } else if (newValue === '#') {
         return false;
     } else if (newValue === '.') {
-        map[newValue.y][newValue.x]=map[start.y][start.x];
+        map[newPoint.y][newPoint.x] = map[start.y][start.x];
         map[start.y][start.x] = '.';
         return true;
     }
 
 }
 
-const simulation2 = (map, robot) => {
-    const m = map.length, n = map[0].length;
+export const moveRight = (robot, map) => {
+    const {x, y} = robot;
+    const n = map[0].length;
+    for (let i = x; i < n - 1; i++) {
+        if (map[y][i] === '#') return false;
+        if (map[y][i] === '.') {
+            map[y].splice(i, 1);
+            map[y].splice(robot.x, 0, '.');
+            return true;
+        }
+    }
+}
 
-    moves.split('').forEach((move) => {
-        const {x: deltaX, y: deltaY} = dir[move];
-        const newPoint = {x: robot.x + deltaX, y: robot.y + deltaY};
+export const moveLeft = (robot, map) => {
+    const {x, y} = robot;
+    for (let i = x; i > 0; i--) {
+        if (map[y][i] === '#') return false;
+        if (map[y][i] === '.') {
+            map[y].splice(i, 1);
+            map[y].splice(x, 0, '.');
+            return true;
+        }
+    }
+}
 
-        const newValue = map[robot.y + deltaY]?.[robot.x + deltaX];
-        // console.log({newPoint, newValue, move});
-        if (newValue && newValue !== '#') {
+export const simulation2 = ({robot, map, move}) => {
 
-            if (newValue === '[' || newValue === ']') {
-                let firstEmpty;
+    const {x: deltaX, y: deltaY} = dir[move];
+    const newPoint = {x: robot.x + deltaX, y: robot.y + deltaY};
+    const newValue = map[robot.y + deltaY]?.[robot.x + deltaX];
+    let newMap = JSON.parse(JSON.stringify(map));
 
-                if (move === '^') {
-                    const {left, right, y} = verticalMove({x: robot.x, y: robot.y}, move, map);
-                    console.log({left, right, y, move})
-                    if (left && right) {
-                        // for (let i = y; i < robot.y - 1; i++) {
-                        //     for (let j = left; j <= right; j++) {
-                        //         map[i][j] = map[i + 1][j];
-                        //         map[i + 1][j] = '.';
-                        //     }
-                        // }
-                        // map[robot.y - 1][robot.x] = '@';
-                        // map[robot.y][robot.x] = '.';
-                        // robot.y = robot.y - 1;
-                    }
+    if (newValue && newValue !== '#') {
+
+        if (newValue === '[' || newValue === ']') {
+
+            if (move === '^' || move === 'v') {
+                const localMap = JSON.parse(JSON.stringify(map));
+                const checkVertical = verticalMove({x: robot.x, y: robot.y}, move, localMap);
+
+                if (checkVertical) {
+                    robot.y = newPoint.y;
+                    newMap = localMap
                 }
-                if (move === '>') {
-                    for (let i = robot.x; i < n - 1; i++) {
-                        if (map[robot.y][i] === '#') break;
-                        if (map[robot.y][i] === '.') {
-                            map[robot.y].splice(i, 1);
-                            map[robot.y].splice(robot.x, 0, '.');
-                            robot.x = newPoint.x;
-
-                            break;
-                        }
-                    }
+            }
+            if (move === '>') {
+                const localMap = JSON.parse(JSON.stringify(map));
+                const checkHorizontal = moveRight(robot, localMap);
+                if (checkHorizontal) {
+                    robot.x = newPoint.x;
+                    newMap = localMap;
                 }
-                if (move === 'v') {
-
-                    const {left, right, y} = verticalMove({x: robot.x, y: robot.y}, move, map);
-                    console.log({left, right, y, move})
-                    if (left && right) {
-                        // for (let i = y; i > robot.y + 1; i--) {
-                        //     for (let j = left; j <= right; j++) {
-                        //         map[i][j] = map[i - 1][j];
-                        //         map[i - 1][j] = '.';
-                        //     }
-                        // }
-                        // map[robot.y + 1][robot.x] = '@';
-                        // map[robot.y][robot.x] = '.';
-                        //
-                        // robot.y = newPoint.y;
-                    }
+            }
+            if (move === '<') {
+                const localMap = JSON.parse(JSON.stringify(map));
+                const checkHorizontal = moveLeft(robot, localMap);
+                if (checkHorizontal) {
+                    robot.x = newPoint.x;
+                    newMap = localMap;
                 }
-                if (move === '<') {
-                    for (let i = robot.x; i > 0; i--) {
-                        if (map[robot.y][i] === '#') break;
-                        if (map[robot.y][i] === '.') {
-                            map[robot.y].splice(i, 1);
-                            map[robot.y].splice(robot.x, 0, '.');
-                            robot.x = newPoint.x;
-
-                            break;
-                        }
-                    }
-                }
-
-
-                // if (firstEmpty) {
-                //     map[firstEmpty.y][firstEmpty.x] = 'O';
-                //     map[newPoint.y][newPoint.x] = '@';
-                //     map[robot.y][robot.x] = '.'
-                //     robot.x = newPoint.x;
-                //     robot.y = newPoint.y;
-                // }
-
-            } else {
-                map[newPoint.y][newPoint.x] = '@';
-                map[robot.y][robot.x] = '.'
-                robot.x = newPoint.x;
-                robot.y = newPoint.y;
             }
 
 
+        } else {
+            newMap[newPoint.y][newPoint.x] = '@';
+            newMap[robot.y][robot.x] = '.'
+            robot.x = newPoint.x;
+            robot.y = newPoint.y;
         }
-        console.table(map.map(el => el.join('')).join('\n'));
-    })
+    }
 
+    return {map: newMap, robot}
 }
 
-const {map: map2, robot: robot2} = init();
+const {map: map2, robot: robot2, moves: moves2} = init2(inputSwitch);
 
-console.table(map2.map(el => el.join('')).join('\n'));
-simulation2(map2, robot2);
-console.table(map2.map(el => el.join('')).join('\n'));
+export const countGPS2 = (map) => {
+    const m = map.length, n = map[0].length;
+    let result = 0;
+    for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+            if (map[i][j] === '[') result += 100 * i + j
+        }
+    }
+    return result
+}
+
+const countResult2 = (map, robot, moves) => {
+    let localMap = map;
+    let localRobot = robot;
+    moves.forEach(move => {
+        const {map: newMap, robot: newRobot} = simulation2({map: localMap, robot: localRobot, move});
+        localMap = newMap;
+        localRobot = newRobot;
+    });
+    return countGPS2(localMap);
+}
+
+const result2 = countResult2(map2, robot2, moves2);
+console.log({result2});
+
